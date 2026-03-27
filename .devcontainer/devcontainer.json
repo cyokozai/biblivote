@@ -1,0 +1,40 @@
+{
+  "name": "Biblivote Dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "target": "dev"
+  },
+  "workspaceFolder": "/workspace",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "source=biblivote_node_modules,target=/workspace/node_modules,type=volume",
+    // clasp OAuth トークン（ホストで clasp login 済みの場合のみ有効）
+    // 値は表示・編集しないこと。認証が必要な場合はホストで clasp login を実行する。
+    "source=${localEnv:HOME}/.clasprc.json,target=/root/.clasprc.json,type=bind,readonly"
+  ],
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Static Server",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "npm ci",
+  "remoteUser": "root",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "orta.vscode-jest",
+        "ms-playwright.playwright"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "jest.autoRun": "watch"
+      }
+    }
+  }
+}
