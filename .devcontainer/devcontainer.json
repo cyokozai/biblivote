@@ -20,7 +20,7 @@
       "onAutoForward": "notify"
     }
   },
-  "postCreateCommand": "npm ci",
+  "postCreateCommand": "npm install",
   "remoteUser": "root",
   "customizations": {
     "vscode": {
