@@ -157,4 +157,4 @@ playwright-report/
 test-results/
 
 
-.claude/
+.claude/*
