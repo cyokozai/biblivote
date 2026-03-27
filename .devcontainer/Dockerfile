@@ -10,7 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 FROM base AS dev
 # node_modules は名前付きボリュームで管理するため COPY package.json のみ
 COPY package*.json ./
-RUN npm ci
+# package-lock.json が未生成の場合は npm install、存在すれば npm ci に切り替え可
+RUN npm install
 # clasp はグローバルインストールして PATH に入れる
 RUN npm install -g @google/clasp serve
 # コンテナ起動後もユーザーとして実行（rootを避ける）
