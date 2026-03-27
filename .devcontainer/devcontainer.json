@@ -23,7 +23,7 @@
       "onAutoForward": "notify"
     }
   },
-  "postCreateCommand": "npm install",
+  "postCreateCommand": "bash .devcontainer/post_create.sh",
   "remoteUser": "root",
   "customizations": {
     "vscode": {
