@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="クラウドネイティブ会議 2026 書店コーナー 技術書アンケート">
+  <title>クラウドネイティブ書店 アンケート</title>
+  <link rel="stylesheet" href="src/style.css">
+
+  <!-- ===== 外部設定値（デプロイ時に実際の URL へ差し替える） ===== -->
+  <script>
+    window.GAS_ENDPOINT  = '';  // GAS Web App URL
+    window.GRAFANA_URL   = 'https://grafana.example.com/d/biblivote';
+    window.REGISTER_URL  = 'https://cloudnativedays.jp/cnj2026/';
+    window.SHARE_TEXT    = encodeURIComponent(
+      '技術書投票に参加しました！ #cloudnativekaigi #cnj2026'
+    );
+  </script>
+
+  <!-- バリデーション・書籍検索ロジック（Alpine より前に読み込む） -->
+  <script src="src/validate.js"></script>
+  <script src="src/books.js"></script>
+  <script src="src/app.js"></script>
+
+  <!-- Alpine.js CDN（defer: DOM 解析後に実行） -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<div x-data="voteApp()" x-cloak class="app">
+
+  <!-- ========== 投票済み画面 ========== -->
+  <div class="card" x-show="hasVoted" x-transition>
+    <div class="already-voted">
+      <div style="font-size:56px;margin-bottom:16px">✅</div>
+      <h1 class="step-title">回答済みです</h1>
+      <p style="margin-top:10px;font-size:15px;color:var(--slate-500);line-height:1.7">
+        既にアンケートへのご回答をいただいております。<br>
+        ご協力ありがとうございました！
+      </p>
+    </div>
+  </div>
+
+  <!-- ========== ウィザード ========== -->
+  <div class="card" x-show="!hasVoted">
+
+    <!-- プログレスバー（Q1〜Q6 のみ表示） -->
+    <div class="header" x-show="step >= 1 && step <= 6" x-transition>
+      <div class="brand">クラウドネイティブ会議 2026</div>
+      <div class="progress-row">
+        <span class="progress-label" x-text="`Q${step} / 6`"></span>
+        <span class="progress-label" x-text="`${Math.round(step / 6 * 100)}%`"></span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" :style="`width:${step / 6 * 100}%`"></div>
+      </div>
+    </div>
+
+    <!-- ======= STEP 0: TOP ======= -->
+    <div x-show="step === 0">
+      <div class="top-content step-wrap">
+        <div class="top-badge">📚 2026.5.14–15 名古屋</div>
+        <h1 class="top-title">
+          クラウドネイティブ書店<br>アンケート
+        </h1>
+        <p class="top-desc">
+          クラウドネイティブ会議 2026 の書店コーナーで<br>
+          あなたのおすすめ技術書を紹介します。<br>
+          回答は約 2 分で完了します。
+        </p>
+        <button class="btn-primary btn-start" @click="goNext()">
+          はじめる &rarr;
+        </button>
+      </div>
+    </div>
+
+    <!-- ======= STEP 1: Q1 ジャンル ======= -->
+    <div x-show="step === 1">
+      <div class="content" :class="direction > 0 ? 'step-wrap' : 'step-wrap back'">
+        <h2 class="step-title">興味のある技術書ジャンルは？</h2>
+        <p class="step-sub">あてはまるものをすべて選んでください</p>
+
+        <div class="checkbox-grid">
+          <template x-for="genre in GENRES" :key="genre">
+            <label
+              class="checkbox-item"
+              :class="form.q1_genres.includes(genre) ? 'checked' : ''"
+            >
+              <input type="checkbox" :value="genre" x-model="form.q1_genres">
+              <span x-text="genre"></span>
+            </label>
+          </template>
+        </div>
+
+        <p class="error-msg" x-show="errors.q1_genres" x-text="errors.q1_genres"></p>
+
+        <div class="actions">
+          <button class="btn-secondary" @click="goBack()">← 戻る</button>
+          <button
+            class="btn-primary"
+            @click="goNext()"
+            :disabled="form.q1_genres.length === 0"
+          >
+            次へ →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= STEP 2: Q2 読書媒体 ======= -->
+    <div x-show="step === 2">
+      <div class="content" :class="direction > 0 ? 'step-wrap' : 'step-wrap back'">
+        <h2 class="step-title">技術書はどちらで読むことが多いですか？</h2>
+        <p class="step-sub">1つ選択すると自動で次へ進みます</p>
+
+        <div class="card-buttons">
+          <template x-for="opt in FORMATS" :key="opt.value">
+            <button
+              class="card-btn"
+              :class="form.q2_format === opt.value ? 'selected' : ''"
+              @click="selectFormat(opt.value)"
+            >
+              <span x-text="opt.icon"></span>
+              <span x-text="opt.value"></span>
+            </button>
+          </template>
+        </div>
+
+        <div class="actions" style="margin-top:16px">
+          <button class="btn-secondary" @click="goBack()">← 戻る</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= STEP 3: Q3 月間読書数 ======= -->
+    <div x-show="step === 3">
+      <div class="content" :class="direction > 0 ? 'step-wrap' : 'step-wrap back'">
+        <h2 class="step-title">月に何冊くらい技術書を読みますか？</h2>
+        <p class="step-sub">0〜99 冊の範囲で入力してください</p>
+
+        <div class="stepper">
+          <button
+            class="stepper-btn"
+            @click="decrement()"
+            :disabled="form.q3_books_per_month <= 0"
+          >−</button>
+          <input
+            type="number"
+            inputmode="numeric"
+            x-model.number="form.q3_books_per_month"
+            min="0" max="99"
+            :class="errors.q3_books_per_month ? 'error-input' : ''"
+          >
+          <button
+            class="stepper-btn"
+            @click="increment()"
+            :disabled="form.q3_books_per_month >= 99"
+          >＋</button>
+        </div>
+
+        <p class="error-msg" x-show="errors.q3_books_per_month" x-text="errors.q3_books_per_month"></p>
+
+        <div class="actions">
+          <button class="btn-secondary" @click="goBack()">← 戻る</button>
+          <button class="btn-primary" @click="goNext()">次へ →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= STEP 4: Q4 最もお世話になった本 ======= -->
+    <div x-show="step === 4">
+      <div class="content" :class="direction > 0 ? 'step-wrap' : 'step-wrap back'">
+        <h2 class="step-title">最もお世話になった技術書は？</h2>
+        <p class="step-sub">書籍名で検索するか、直接入力してください（50文字以内）</p>
+
+        <div class="search-wrap" @click.outside="closeDropdown('q4')">
+          <input
+            type="text"
+            x-model="form.q4_best_book"
+            @input="onQ4Input($event.target.value)"
+            :class="errors.q4_best_book ? 'error-input' : ''"
+            placeholder="例: Kubernetes完全ガイド"
+            maxlength="50"
+            autocomplete="off"
+          >
+
+          <!-- 検索候補ドロップダウン -->
+          <div class="search-results" x-show="bs.q4.results.length > 0">
+            <template x-for="book in bs.q4.results" :key="book.id">
+              <div class="book-result" @click="selectBook('q4', book)">
+                <template x-if="book.thumbnail">
+                  <img class="book-thumb" :src="book.thumbnail" :alt="book.title" loading="lazy">
+                </template>
+                <template x-if="!book.thumbnail">
+                  <div class="book-thumb-placeholder">📖</div>
+                </template>
+                <div class="book-info">
+                  <div class="book-title" x-text="book.title"></div>
+                  <div class="book-author" x-text="book.author"></div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <p class="search-hint" x-show="bs.q4.loading">検索中...</p>
+          <p class="search-hint" x-show="bs.q4.error" style="color:var(--red)">
+            検索に失敗しました。手動で入力してください。
+          </p>
+        </div>
+
+        <!-- 選択済み書籍プレビュー (FR-020) -->
+        <div class="selected-book" x-show="form.q4_thumbnail">
+          <img class="selected-book-thumb" :src="form.q4_thumbnail" :alt="form.q4_best_book" loading="lazy">
+          <div class="selected-book-info">
+            <div class="selected-book-title" x-text="form.q4_best_book"></div>
+            <div class="selected-book-author">ISBN: <span x-text="form.q4_isbn || '—'"></span></div>
+          </div>
+        </div>
+
+        <p class="error-msg" x-show="errors.q4_best_book" x-text="errors.q4_best_book"></p>
+
+        <div class="actions">
+          <button class="btn-secondary" @click="goBack()">← 戻る</button>
+          <button class="btn-primary" @click="goNext()">次へ →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= STEP 5: Q5 イチオシ技術書 ======= -->
+    <div x-show="step === 5">
+      <div class="content" :class="direction > 0 ? 'step-wrap' : 'step-wrap back'">
+        <h2 class="step-title">イチオシの技術書を教えてください</h2>
+        <p class="step-sub">書籍名で検索するか、直接入力してください（50文字以内）</p>
+
+        <div class="search-wrap" @click.outside="closeDropdown('q5')">
+          <input
+            type="text"
+            x-model="form.q5_recommendation"
+            @input="onQ5Input($event.target.value)"
+            :class="errors.q5_recommendation ? 'error-input' : ''"
+            placeholder="例: 入門 監視"
+            maxlength="50"
+            autocomplete="off"
+          >
+
+          <div class="search-results" x-show="bs.q5.results.length > 0">
+            <template x-for="book in bs.q5.results" :key="book.id">
+              <div class="book-result" @click="selectBook('q5', book)">
+                <template x-if="book.thumbnail">
+                  <img class="book-thumb" :src="book.thumbnail" :alt="book.title" loading="lazy">
+                </template>
+                <template x-if="!book.thumbnail">
+                  <div class="book-thumb-placeholder">📖</div>
+                </template>
+                <div class="book-info">
+                  <div class="book-title" x-text="book.title"></div>
+                  <div class="book-author" x-text="book.author"></div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <p class="search-hint" x-show="bs.q5.loading">検索中...</p>
+          <p class="search-hint" x-show="bs.q5.error" style="color:var(--red)">
+            検索に失敗しました。手動で入力してください。
+          </p>
+        </div>
+
+        <div class="selected-book" x-show="form.q5_thumbnail">
+          <img class="selected-book-thumb" :src="form.q5_thumbnail" :alt="form.q5_recommendation" loading="lazy">
+          <div class="selected-book-info">
+            <div class="selected-book-title" x-text="form.q5_recommendation"></div>
+            <div class="selected-book-author">ISBN: <span x-text="form.q5_isbn || '—'"></span></div>
+          </div>
+        </div>
+
+        <p class="error-msg" x-show="errors.q5_recommendation" x-text="errors.q5_recommendation"></p>
+
+        <div class="actions">
+          <button class="btn-secondary" @click="goBack()">← 戻る</button>
+          <button class="btn-primary" @click="goNext()">次へ →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= STEP 6: Q6 参加申込確認 ======= -->
+    <div x-show="step === 6">
+      <div class="content" :class="direction > 0 ? 'step-wrap' : 'step-wrap back'">
+        <h2 class="step-title">クラウドネイティブ会議 2026 に申し込みましたか？</h2>
+        <p class="step-sub">2026 年 5 月 14〜15 日・名古屋</p>
+
+        <div class="card-buttons">
+          <button
+            class="card-btn"
+            :class="form.q6_registered === true ? 'selected' : ''"
+            @click="form.q6_registered = true"
+          >
+            ✅ はい、申し込みました
+          </button>
+          <button
+            class="card-btn"
+            :class="form.q6_registered === false ? 'selected' : ''"
+            @click="form.q6_registered = false"
+          >
+            🤔 まだです
+          </button>
+        </div>
+
+        <!-- 条件付きメッセージ（FR-026, FR-027） -->
+        <div x-show="form.q6_registered === true" class="q6-message registered">
+          当日、現地会場ではクラウドネイティブ書店を開催します！<br>
+          ぜひ現地に足を運んだ際はお立ち寄りください！🎉
+        </div>
+        <div x-show="form.q6_registered === false" class="q6-message not-registered">
+          もしよければ参加登録しませんか？
+          <a
+            :href="REGISTER_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="register-link-btn"
+          >
+            参加登録する →
+          </a>
+        </div>
+
+        <p class="error-msg" x-show="errors.q6_registered" x-text="errors.q6_registered"></p>
+
+        <!-- 送信ボタン（選択後に表示） -->
+        <div class="actions" x-show="form.q6_registered !== null">
+          <button class="btn-secondary" @click="goBack()">← 戻る</button>
+          <button class="btn-primary" @click="submit()" :disabled="submitting">
+            <span x-show="submitting" class="spinner"></span>
+            <span x-text="submitting ? '送信中...' : '送信する'"></span>
+          </button>
+        </div>
+        <div class="actions" x-show="form.q6_registered === null">
+          <button class="btn-secondary" @click="goBack()">← 戻る</button>
+        </div>
+
+        <div class="error-banner" x-show="submitError" x-text="submitError"></div>
+      </div>
+    </div>
+
+    <!-- ======= STEP 7: 完了 ======= -->
+    <div x-show="step === 7">
+      <div class="complete step-wrap">
+        <div class="complete-icon">🎉</div>
+        <h2 class="complete-title">回答ありがとうございました！</h2>
+        <p class="complete-sub">
+          あなたの投票を受け付けました。<br>
+          結果はイベント当日のクロージングセッションで発表します！
+        </p>
+        <div class="complete-buttons">
+          <a
+            :href="`https://x.com/intent/tweet?text=${SHARE_TEXT}`"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-share btn-share-x"
+          >
+            𝕏 でシェアする
+          </a>
+          <a
+            :href="GRAFANA_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-share btn-share-grafana"
+          >
+            📊 投票結果を見る
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ハニーポット（ボット対策: 人間には不可視） -->
+    <div class="hp-field" aria-hidden="true">
+      <input type="text" name="website" tabindex="-1" autocomplete="off" x-model="form.honeypot">
+    </div>
+
+  </div><!-- /.card -->
+</div><!-- /#app -->
+
+</body>
+</html>
