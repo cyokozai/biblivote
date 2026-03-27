@@ -25,15 +25,28 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        // Claude Code
+        "anthropics.claude-code",
+        // テスト
+        "orta.vscode-jest",
+        "ms-playwright.playwright",
+        // コード品質
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
-        "orta.vscode-jest",
-        "ms-playwright.playwright"
+        // HTML / CSS / JS
+        "ecmel.vscode-html-css",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        // Git
+        "eamodio.gitlens"
       ],
       "settings": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "jest.autoRun": "watch"
+        "jest.autoRun": "watch",
+        // Alpine.js の x-* 属性をHTMLバリデーションエラーから除外
+        "html.customData": [],
+        "css.lint.unknownAtRules": "ignore"
       }
     }
   }
