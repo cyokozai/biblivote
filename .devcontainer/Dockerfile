@@ -22,5 +22,5 @@ CMD ["bash"]
 FROM mcr.microsoft.com/playwright:v1.52.0-noble AS e2e
 WORKDIR /workspace
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 CMD ["npx", "playwright", "test"]
