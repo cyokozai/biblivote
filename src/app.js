@@ -234,7 +234,7 @@ document.addEventListener('alpine:init', () => {
 
           const res = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
               q1_genres: this.form.q1_genres,
               q2_format: this.form.q2_format,
