@@ -245,8 +245,15 @@ input:focus {
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   z-index: 50;
-  max-height: 280px;
+  max-height: min(50vh, 480px);
   overflow-y: auto;
+}
+
+.search-results-count {
+  padding: 4px 14px;
+  font-size: 11px;
+  color: var(--slate-500);
+  border-bottom: 1px solid var(--slate-100);
 }
 
 .book-result {

@@ -45,7 +45,7 @@ async function searchBooks(query) {
   const params = new URLSearchParams({
     q: `intitle:${query}`,
     langRestrict: 'ja',
-    maxResults: '5',
+    maxResults: '30',
     fields: 'items(id,volumeInfo(title,authors,imageLinks,industryIdentifiers))',
   });
 
