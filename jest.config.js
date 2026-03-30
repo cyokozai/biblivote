@@ -10,7 +10,14 @@ module.exports = {
   testPathIgnorePatterns: ["/node_modules/", "/e2e/"],
 
   // カバレッジ設定
-  collectCoverageFrom: ["src/**/*.js", "gas/**/*.js", "!**/*.spec.js"],
+  // app.js (Alpine.js) と fingerprint.js (FingerprintJS/WebCrypto) は
+  // ブラウザ専用のため Jest 計測から除外する
+  collectCoverageFrom: [
+    "src/**/*.js",
+    "!src/app.js",
+    "!src/fingerprint.js",
+    "!**/*.spec.js",
+  ],
   coverageThreshold: {
     global: {
       lines: 70,

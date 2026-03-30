@@ -77,6 +77,13 @@ document.addEventListener('alpine:init', () => {
 
       this._debQ4 = createDebounce((q) => this._doSearch('q4', q), 300);
       this._debQ5 = createDebounce((q) => this._doSearch('q5', q), 300);
+
+      // reCAPTCHA v3: サイトキーが設定されている場合のみ動的に読み込む
+      if (window.RECAPTCHA_SITE_KEY) {
+        const s = document.createElement('script');
+        s.src = `https://www.google.com/recaptcha/api.js?render=${window.RECAPTCHA_SITE_KEY}`;
+        document.head.appendChild(s);
+      }
     },
 
     // ===== ナビゲーション =====
@@ -202,6 +209,29 @@ document.addEventListener('alpine:init', () => {
         const endpoint = window.GAS_ENDPOINT;
 
         if (endpoint) {
+          // CSRF トークン取得
+          const tokenRes = await fetch(`${endpoint}?action=token`);
+          const { csrfToken } = await tokenRes.json();
+
+          // フィンガープリント取得（失敗しても投票は継続）
+          let fingerprint = '';
+          try { fingerprint = await getFingerprint(); } catch { /* noop */ }
+
+          // reCAPTCHA v3 トークン取得（サイトキー未設定時はスキップ）
+          let captchaToken = '';
+          if (window.RECAPTCHA_SITE_KEY && window.grecaptcha) {
+            try {
+              captchaToken = await new Promise((resolve, reject) => {
+                grecaptcha.ready(() => {
+                  grecaptcha
+                    .execute(window.RECAPTCHA_SITE_KEY, { action: 'vote' })
+                    .then(resolve)
+                    .catch(reject);
+                });
+              });
+            } catch { /* noop */ }
+          }
+
           const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -214,10 +244,9 @@ document.addEventListener('alpine:init', () => {
               q5_recommendation: this.form.q5_recommendation,
               q5_isbn: this.form.q5_isbn,
               q6_registered: this.form.q6_registered,
-              // FingerprintJS・reCAPTCHA・CSRF は後続フェーズで実装
-              fingerprint: '',
-              captchaToken: '',
-              csrfToken: '',
+              fingerprint,
+              captchaToken,
+              csrfToken,
             }),
           });
 

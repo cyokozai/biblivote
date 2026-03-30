@@ -7,19 +7,32 @@
   <title>クラウドネイティブ書店 アンケート</title>
   <link rel="stylesheet" href="src/style.css">
 
-  <!-- ===== 外部設定値（デプロイ時に実際の URL へ差し替える） ===== -->
+  <!-- ===== 外部設定値（scripts/inject-env.js でデプロイ時に差し替え） ===== -->
   <script>
-    window.GAS_ENDPOINT  = '';  // GAS Web App URL
-    window.GRAFANA_URL   = 'https://grafana.example.com/d/biblivote';
-    window.REGISTER_URL  = 'https://cloudnativedays.jp/cnj2026/';
-    window.SHARE_TEXT    = encodeURIComponent(
+    window.GAS_ENDPOINT        = '';  // GAS Web App URL
+    window.GRAFANA_URL         = '';  // Grafana ダッシュボード URL
+    window.REGISTER_URL        = 'https://kaigi.cloudnativedays.jp/';
+    window.RECAPTCHA_SITE_KEY  = '';  // reCAPTCHA v3 サイトキー
+    window.GOOGLE_BOOKS_API_KEY = ''; // Google Books API キー（省略可）
+    window.SHARE_TEXT          = encodeURIComponent(
       '技術書投票に参加しました！ #cloudnativekaigi #cnj2026'
     );
   </script>
 
-  <!-- バリデーション・書籍検索ロジック（Alpine より前に読み込む） -->
+  <!-- FingerprintJS OSS v3 (CDN) -->
+  <script>
+    // FingerprintJS の CDN 読み込み失敗時は fingerprint.js がフォールバックを使用
+    window.FingerprintJS = window.FingerprintJS || null;
+  </script>
+  <script async src="https://openfpcdn.io/fingerprintjs/v3"
+    onload="window.FingerprintJS = FingerprintJS"
+    onerror="console.warn('FingerprintJS CDN failed, using fallback')">
+  </script>
+
+  <!-- バリデーション・書籍検索・フィンガープリント（Alpine より前に読み込む） -->
   <script src="src/validate.js"></script>
   <script src="src/books.js"></script>
+  <script src="src/fingerprint.js"></script>
   <script src="src/app.js"></script>
 
   <!-- Alpine.js CDN（defer: DOM 解析後に実行） -->

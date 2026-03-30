@@ -49,6 +49,10 @@ async function searchBooks(query) {
     fields: 'items(id,volumeInfo(title,authors,imageLinks,industryIdentifiers))',
   });
 
+  const apiKey =
+    typeof window !== 'undefined' ? window.GOOGLE_BOOKS_API_KEY : '';
+  if (apiKey) params.set('key', apiKey);
+
   const res = await fetch(
     `https://www.googleapis.com/books/v1/volumes?${params}`
   );
