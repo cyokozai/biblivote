@@ -56,6 +56,7 @@ async function searchBooks(query) {
   const res = await fetch(
     `https://www.googleapis.com/books/v1/volumes?${params}`
   );
+  if (res.status === 429) return [];
   if (!res.ok) throw new Error(`Books API error: ${res.status}`);
 
   const data = await res.json();

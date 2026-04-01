@@ -50,7 +50,16 @@ body {
   background: #fff;
   border-radius: var(--radius);
   box-shadow: var(--shadow-md);
+  overflow: visible;
+}
+
+.card > .header {
+  border-radius: var(--radius) var(--radius) 0 0;
   overflow: hidden;
+}
+
+.card-search {
+  min-height: min(70vh, 600px);
 }
 
 /* ===== Progress Header ===== */

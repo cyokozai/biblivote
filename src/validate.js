@@ -70,8 +70,8 @@ function validateBookTitle(title) {
   if (!title || title.length === 0) {
     return '書籍タイトルを入力してください';
   }
-  if (title.length > 50) {
-    return '50文字以内で入力してください';
+  if (title.length > 100) {
+    return '100文字以内で入力してください';
   }
   return null;
 }
