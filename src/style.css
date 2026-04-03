@@ -461,10 +461,10 @@ input:focus {
   margin-bottom: 8px;
 }
 
-.privacy-notice-fp {
+.privacy-notice p.privacy-notice-fp {
   font-size: 12px;
   color: var(--slate-400);
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
 }
 
 .submit-notice {
