@@ -1,88 +1,122 @@
-# Biblivote — CloudNative Kaigi 2026 書店コーナー投票システム
+# Biblivote
 
-Biblivote は、[CloudNative Kaigi 2026](https://cloudnativedays.jp/archives/cloudnativekaigi2026/)（2026/5/14-15、名古屋 / Nagoya）の「書店コーナー」企画として、技術書の投票を収集・可視化するWebアプリケーションです。
+<p align="center">
+	<img src="image/biblivote-icon.png" width="200" height="200" alt="Biblivote Icon">
+</p>
 
-## 🚀 アプリの概要
-参加者がお気に入りの技術書に投票し、その結果をリアルタイムで Grafana ダッシュボードに反映します。
-ウィザード形式の直感的な UI で、Google Books API を活用した書籍検索サジェスト機能を備えています。
+[CloudNative Kaigi 2026](https://cloudnativedays.jp/archives/cloudnativekaigi2026/)（2026/5/14-15、名古屋）の書店コーナー向け技術書投票 Web アプリ。
 
-## 🛠 使用リソース・技術スタック
+## 技術スタック
 
-| 役割 | 技術 / サービス | 理由 |
-| :--- | :--- | :--- |
-| **Frontend** | Vanilla JS / CSS / HTML | 軽量・高速な動作とメンテナンス性の両立 |
-| **Backend** | Google Apps Script (GAS) | サーバー管理不要、Google サービスとの親和性 |
-| **Database** | Google Spreadsheet | データの視認性が高く、編集・管理が容易 |
-| **Hosting** | GitHub Pages / Cloudflare Pages | 静的サイトとしてのゼロコスト運用 |
-| **API (Search)** | Google Books API | 膨大な技術書データベースからの検索サジェスト |
-| **Security** | reCAPTCHA v3 / FingerprintJS | ボット対策および重複投票の防止 |
-| **Visualization**| Grafana | 投票結果のリアルタイム集計・可視化 |
-
-## 📦 開発・起動方法
-
-### 1. 依存関係のインストール
-```bash
-npm install
-```
-
-### 2. 環境変数の設定
-`.env.example` をコピーして `.env` を作成し、必要な値を記入してください。
-```bash
-cp .env.example .env
-```
-
-### 3. ローカル起動
-環境変数を `index.html` に注入し、ローカルサーバーを起動します。
-```bash
-npm run build:local
-npm run serve
-```
-ブラウザで `http://localhost:8080` を開きます。
-
-## 🔑 クレデンシャルの登録
-
-以下の環境変数を `.env` および GAS の「スクリプトプロパティ」に設定する必要があります。
-
-### フロントエンド用 (.env)
-- `GAS_ENDPOINT`: デプロイした GAS Web App の URL
-- `RECAPTCHA_SITE_KEY`: Google reCAPTCHA v3 のサイトキー
-- `GOOGLE_BOOKS_API_KEY`: Google Books API キー（オプション）
-- `GRAFANA_URL`: 結果表示用ダッシュボードの URL
-
-### バックエンド用 (GAS スクリプトプロパティ)
-- `RECAPTCHA_SECRET`: Google reCAPTCHA v3 のシークレットキー
-- `SPREADSHEET_ID`: 投票データを保存するスプレッドシートの ID
-
-## 🌐 デプロイと構成
-
-### デプロイ先
-- **フロントエンド**: GitHub Pages または Cloudflare Pages
-- **バックエンド**: Google Apps Script (Web App として公開)
-
-### なぜこの構成か？
-- **コストゼロ**: すべて無料枠の範囲内で運用可能。
-- **インフラ管理不要**: サーバーのパッチ当てやスケーリングの心配がありません。
-- **迅速な開発**: プロトタイプから本番投入までを短期間で完結させるため。
-
-## 🧪 テスト
-
-### ユニット / 統合テスト (Jest)
-```bash
-npm test
-```
-
-### E2E テスト (Playwright)
-```bash
-npm run test:e2e
-```
-
-## 📂 ディレクトリ構造
-- `src/`: フロントエンドのソースコード (Logic, Style)
-- `gas/`: Google Apps Script のバックエンドコード
-- `__tests__/`: Jest によるユニット・統合テスト
-- `e2e/`: Playwright によるエンドツーエンドテスト
-- `docs/`: PRD, ADR などの設計ドキュメント
-- `scripts/`: 環境変数注入用スクリプト
+| レイヤ | 技術 |
+| :--- | :--- |
+| Frontend | Vanilla JS / Alpine.js (CDN) |
+| Backend | Google Apps Script (GAS) |
+| Database | Google Spreadsheet |
+| Hosting | GitHub Pages / Cloudflare Pages |
+| 書籍検索 | Google Books API |
+| セキュリティ | reCAPTCHA v3 / FingerprintJS |
+| 可視化 | Grafana |
 
 ---
-© 2026 [cyokozai](https://github.com/cyokozai) / CloudNative Days Tokyo
+
+## ローカル開発
+
+- **Node.js**: v20 以上推奨（`--env-file` フラグを使用するため）
+
+```bash
+# 依存関係インストール
+npm install
+
+# 環境変数設定
+cp .env.example .env   # → .env を編集
+
+# ローカルサーバー起動
+npm run build:local
+npm run serve          # http://localhost:8080
+```
+
+---
+
+## クレデンシャル設定
+
+### `.env`（フロントエンド）
+
+| キー | 説明 |
+| :--- | :--- |
+| `GAS_ENDPOINT` | デプロイ済み GAS Web App の URL |
+| `RECAPTCHA_SITE_KEY` | reCAPTCHA v3 サイトキー |
+| `GOOGLE_BOOKS_API_KEY` | Google Books API キー（省略可） |
+| `GRAFANA_URL` | 結果表示ダッシュボード URL |
+
+### GAS スクリプトプロパティ（バックエンド）
+
+| キー | 説明 |
+| :--- | :--- |
+| `RECAPTCHA_SECRET` | reCAPTCHA v3 シークレットキー |
+| `SPREADSHEET_ID` | 投票データ保存先スプレッドシート ID |
+
+> GAS スクリプトプロパティは、GAS エディタの「プロジェクトの設定 → スクリプトプロパティ」から設定します。
+
+---
+
+## デプロイ
+
+### フロントエンド（GitHub Pages / Cloudflare Pages）
+
+環境変数を `index.html` に注入してからプッシュします。
+
+```bash
+# 環境変数を shell または .env から読み込んで index.html を生成
+# CI の場合は環境変数を設定してください
+npm run build
+
+# 変更をコミットしてプッシュ
+git add index.html
+git commit -m "docs: build index.html with production environment variables"
+git push origin main
+```
+
+GitHub Pages は `Settings → Pages` でブランチを `main` に設定してください。
+
+### バックエンド（GAS）
+
+```bash
+# clasp 初回認証（ホスト側で実行）
+npx @google/clasp login
+
+# GAS にプッシュ
+npx @google/clasp push
+```
+
+プッシュ後、GAS エディタから「デプロイ → 新しいデプロイ」で **Web App** として公開し、取得した URL を `GAS_ENDPOINT` に設定します。
+
+---
+
+## テスト
+
+```bash
+npm test                # ユニットテスト (Jest)
+npm run test:watch      # ウォッチモード
+npm run test:coverage   # カバレッジ計測
+npm run test:e2e        # E2E テスト (Playwright)
+```
+
+---
+
+## ディレクトリ構成
+
+```
+biblivote/
+├── index.html        # メイン HTML
+├── src/              # バリデーション・書籍検索・フィンガープリント
+├── gas/              # GAS バックエンド (Code.gs)
+├── scripts/          # 環境変数注入スクリプト
+├── __tests__/        # Jest ユニットテスト
+├── e2e/              # Playwright E2E テスト
+└── docs/             # PRD / ADR / SLO
+```
+
+---
+
+© 2026 [cyokozai](https://github.com/cyokozai) / CloudNative Days
