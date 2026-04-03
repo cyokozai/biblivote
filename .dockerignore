@@ -1,0 +1,25 @@
+node_modules
+.git
+.jj
+
+# Secrets & Credentials
+.env
+.env.*
+.clasprc.json
+*credentials*.json
+*secret*.json
+*token*.json
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# Test outputs
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Misc
+*.log
+.DS_Store

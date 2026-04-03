@@ -137,3 +137,24 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Secrets & Credentials
+.clasprc.json
+*credentials*.json
+*secret*.json
+*token*.json
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# DevContainer / Docker
+.devcontainer/devcontainer.env
+docker-compose.override.yml
+
+# Playwright
+playwright-report/
+test-results/
+
+
+.claude/*

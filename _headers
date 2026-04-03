@@ -1,0 +1,9 @@
+/*
+  # セキュリティヘッダー（Cloudflare Pages _headers）
+  # ADR-004 不正投票対策・ADR-005 ホスティング要件に基づく CSP 設定
+
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://openfpcdn.io https://www.google.com https://www.gstatic.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://books.google.com https://*.googleusercontent.com data:; connect-src 'self' https://www.googleapis.com https://script.google.com https://www.google.com; frame-src https://www.google.com; object-src 'none'; base-uri 'self'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
