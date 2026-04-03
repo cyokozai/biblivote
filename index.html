@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="クラウドネイティブ会議 2026 書店コーナー 技術書アンケート">
-  <title>クラウドネイティブ書店 アンケート</title>
+  <meta name="description" content="クラウドネイティブ・Platform Engineering・SRE に関わるエンジニアの皆さんの読書スタイルや推しの技術書を教えてください。">
+  <title>クラウドネイティブ技術書アンケート 2026</title>
   <link rel="stylesheet" href="src/style.css">
 
   <!-- ===== 外部設定値（scripts/inject-env.js でデプロイ時に差し替え） ===== -->
@@ -74,13 +74,29 @@
       <div class="top-content step-wrap">
         <div class="top-badge">📚 2026.5.14–15 名古屋</div>
         <h1 class="top-title">
-          クラウドネイティブ書店<br>アンケート
+          クラウドネイティブ技術書<br>アンケート 2026
         </h1>
         <p class="top-desc">
-          クラウドネイティブ会議 2026 の書店コーナーで<br>
-          あなたのおすすめ技術書を紹介します。<br>
-          回答は約 2 分で完了します。
+          クラウドネイティブ・Platform Engineering・SRE に関わるエンジニアの皆さんが、普段どんな技術書を読んでいるのか——。<br><br>
+          この投票では、あなたの読書スタイルや推しの技術書を教えていただきます。
+          集まった結果は、5月14-15日に名古屋で開催される「クラウドネイティブ会議」のクロージングで発表。
+          当日の書店コーナーにもリアルタイムで反映し、みんなの「推し本」が一目でわかる空間をつくります。
         </p>
+        <p class="top-meta">所要時間: 約1分 ｜ 全6問</p>
+
+        <div class="privacy-notice">
+          <p class="privacy-notice-title">📋 データ利用案内</p>
+          <p>本アンケートでは、氏名・メールアドレス等の個人を特定する情報は収集しません。<br>
+          投票結果は以下の目的で使用します。</p>
+          <ul>
+            <li>クラウドネイティブ会議クロージングでの結果発表</li>
+            <li>会場内 書店コーナーでのリアルタイム表示</li>
+            <li>公式ブログ・SNS での紹介</li>
+            <li>今後のイベント企画の参考</li>
+          </ul>
+          <p class="privacy-notice-fp">不正投票防止のため、ブラウザの識別情報（フィンガープリント）を一時的に使用しますが、個人の特定には使用しません。</p>
+        </div>
+
         <button class="btn-primary btn-start" @click="goNext()">
           はじめる &rarr;
         </button>
@@ -339,6 +355,11 @@
         </div>
 
         <p class="error-msg" x-show="errors.q6_registered" x-text="errors.q6_registered"></p>
+
+        <!-- 送信前確認（選択後に表示） -->
+        <div class="submit-notice" x-show="form.q6_registered !== null">
+          <p>ご回答内容はクラウドネイティブ会議での発表・公式メディアでの紹介に使用されます。個人を特定する情報は収集していません。「送信する」を押すと回答が確定します。</p>
+        </div>
 
         <!-- 送信ボタン（選択後に表示） -->
         <div class="actions" x-show="form.q6_registered !== null">
