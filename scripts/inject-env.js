@@ -24,11 +24,12 @@ const HTML_PATH = path.join(__dirname, '..', 'index.html');
  * 環境変数が未設定（空文字 / undefined）の場合は変更しない。
  */
 function injectWindowVar(html, key, value) {
-  if (!value) return html;
-  // window.KEY = '...' または window.KEY = "..." の両パターンに対応
+  const normalizedValue = value || '';
+  const serializedValue = JSON.stringify(normalizedValue);
+  // window.KEY = '...' または window.KEY = "...\" の両パターンに対応
   return html.replace(
-    new RegExp(`(window\\.${key}\\s*=\\s*)(['"])[^'"]*(['"])`, 'g'),
-    `$1$2${value}$3`,
+    new RegExp(`(window\\\\.${key}\\\\s*=\\\\s*)(['\"])[^'\"]*(['\"])`, 'g'),
+    (_, assignmentPrefix) => `${assignmentPrefix}${serializedValue}`,
   );
 }
 

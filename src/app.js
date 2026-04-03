@@ -244,20 +244,26 @@ document.addEventListener('alpine:init', () => {
               q5_recommendation: this.form.q5_recommendation,
               q5_isbn: this.form.q5_isbn,
               q6_registered: this.form.q6_registered,
+              website: this.form.honeypot,
               fingerprint,
               captchaToken,
               csrfToken,
             }),
           });
 
-          if (res.status === 409) {
+          const json = await res.json();
+
+          if (json.error === 'already_voted' || json.status === 409) {
             // 重複投票: ローカルにもフラグを立てて完了画面へ
             localStorage.setItem('biblivote_voted', '1');
             this.hasVoted = true;
+            this.step = 7;
             return;
           }
 
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (!json.ok) {
+            throw new Error(json.error || `Error ${json.status}`);
+          }
         } else {
           // Dev モード: GAS エンドポイント未設定の場合は成功をシミュレート
           await new Promise((r) => setTimeout(r, 600));
