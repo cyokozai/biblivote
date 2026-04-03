@@ -43,8 +43,19 @@ function doGet(e) {
  * 処理順序: CSRF → reCAPTCHA → 重複チェック → バリデーション → 書き込み
  */
 function doPost(e) {
+  var lock = LockService.getScriptLock();
   try {
+    lock.waitLock(30000);
+
     var body = JSON.parse(e.postData.contents);
+
+    // 0. ハニーポット検証（ADR-004: 多層防御）
+    var website = body && body.website;
+    if ((typeof website === 'string' && website.trim() !== '') ||
+        (typeof website !== 'string' && website)) {
+      _writeLog(body.fingerprint, 'rejected_honeypot');
+      return _json({ error: 'invalid_request' }, 400);
+    }
 
     // 1. CSRF トークン検証（FR-053-1）
     if (!_verifyCsrf(body.csrfToken)) {
@@ -80,6 +91,8 @@ function doPost(e) {
   } catch (err) {
     Logger.log(err.toString());
     return _json({ error: 'internal_error' }, 500);
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -104,12 +117,62 @@ function _verifyCaptcha(token, secret) {
   return result.success === true && result.score >= 0.5;
 }
 
+function _duplicateFingerprintKey_(fingerprint) {
+  return 'dup_fp_' + fingerprint;
+}
+
+function _syncDuplicateIndex_(sheet, properties, cache) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    properties.setProperty('dup_indexed_last_row', '1');
+    return;
+  }
+
+  var indexedLastRow = parseInt(properties.getProperty('dup_indexed_last_row') || '1', 10);
+  if (isNaN(indexedLastRow) || indexedLastRow < 1) indexedLastRow = 1;
+  if (indexedLastRow >= lastRow) return;
+
+  var startRow = Math.max(2, indexedLastRow + 1);
+  var numRows = lastRow - startRow + 1;
+  if (numRows <= 0) {
+    properties.setProperty('dup_indexed_last_row', String(lastRow));
+    return;
+  }
+
+  var fps = sheet.getRange(startRow, 2, numRows, 1).getValues();
+  for (var i = 0; i < fps.length; i++) {
+    var fp = fps[i][0];
+    if (!fp) continue;
+    var key = _duplicateFingerprintKey_(fp);
+    properties.setProperty(key, '1');
+    cache.put(key, '1', 21600);
+  }
+
+  properties.setProperty('dup_indexed_last_row', String(lastRow));
+}
+
 function _isDuplicate(fingerprint) {
+  if (!fingerprint) return false;
+
+  var key = _duplicateFingerprintKey_(fingerprint);
+  var cache = CacheService.getScriptCache();
+  if (cache.get(key) === '1') return true;
+
+  var properties = PropertiesService.getScriptProperties();
+  if (properties.getProperty(key) === '1') {
+    cache.put(key, '1', 21600);
+    return true;
+  }
+
   var ss = _getSpreadsheet();
   var sheet = ss.getSheetByName('logs');
   if (!sheet || sheet.getLastRow() < 2) return false;
-  var fps = sheet.getRange(2, 2, sheet.getLastRow() - 1, 1).getValues();
-  return fps.some(function (row) { return row[0] === fingerprint; });
+
+  _syncDuplicateIndex_(sheet, properties, cache);
+
+  var hit = properties.getProperty(key) === '1';
+  if (hit) cache.put(key, '1', 21600);
+  return hit;
 }
 
 function _validate(body) {
@@ -201,9 +264,32 @@ function _getOrCreateSheet(name) {
   return ss.getSheetByName(name) || ss.insertSheet(name);
 }
 
-function _json(data) {
+function _json(data, status) {
+  var normalizedStatus = status || 200;
+  var payload = {};
+
+  if (data !== null && typeof data === 'object') {
+    for (var key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        payload[key] = data[key];
+      }
+    }
+  } else {
+    payload.data = data;
+  }
+
+  if (typeof payload.status === 'undefined') {
+    payload.status = normalizedStatus;
+  }
+  if (typeof payload.ok === 'undefined') {
+    payload.ok = normalizedStatus < 400;
+  }
+  if (!payload.ok && typeof payload.error === 'undefined') {
+    payload.error = 'request_failed';
+  }
+
   return ContentService
-    .createTextOutput(JSON.stringify(data))
+    .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
 }
 

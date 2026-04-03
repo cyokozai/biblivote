@@ -90,12 +90,12 @@ describe('validateBookTitle', () => {
     expect(validateBookTitle('a')).toBeNull();
   });
 
-  test('50文字はOK', () => {
-    expect(validateBookTitle('a'.repeat(50))).toBeNull();
+  test('100文字はOK', () => {
+    expect(validateBookTitle('a'.repeat(100))).toBeNull();
   });
 
-  test('51文字はエラー', () => {
-    expect(validateBookTitle('a'.repeat(51))).not.toBeNull();
+  test('101文字はエラー', () => {
+    expect(validateBookTitle('a'.repeat(101))).not.toBeNull();
   });
 
   test('空文字はエラー（必須項目）', () => {

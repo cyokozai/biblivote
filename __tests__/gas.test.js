@@ -34,9 +34,11 @@ global.SpreadsheetApp = {
 };
 
 // PropertiesService: SPREADSHEET_ID を返すミニマルモック
+const _propertiesStore = { SPREADSHEET_ID: 'test-id' };
 global.PropertiesService = {
   getScriptProperties: () => ({
-    getProperty: (key) => (key === 'SPREADSHEET_ID' ? 'test-id' : null),
+    getProperty: (key) => _propertiesStore[key] ?? null,
+    setProperty: (k, v) => { _propertiesStore[k] = v; },
   }),
 };
 
@@ -44,6 +46,12 @@ global.PropertiesService = {
 global.UrlFetchApp = { fetch: jest.fn() };
 global.Logger = { log: jest.fn() };
 global.Utilities = { getUuid: jest.fn().mockReturnValue('mock-uuid') };
+global.LockService = {
+  getScriptLock: () => ({
+    waitLock: jest.fn(),
+    releaseLock: jest.fn(),
+  }),
+};
 global.ContentService = {
   createTextOutput: jest.fn().mockReturnValue({
     setMimeType: jest.fn().mockReturnValue({}),
@@ -101,8 +109,8 @@ describe('_validate', () => {
       .toMatchObject({ field: 'q4_best_book' });
   });
 
-  test('q4_best_book が51文字はエラー', () => {
-    expect(_validate({ ...validBody, q4_best_book: 'a'.repeat(51) }))
+  test('q4_best_book が101文字はエラー', () => {
+    expect(_validate({ ...validBody, q4_best_book: 'a'.repeat(101) }))
       .toMatchObject({ field: 'q4_best_book' });
   });
 
@@ -166,6 +174,12 @@ describe('_isDuplicate', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     _mockSS.getSheetByName.mockReturnValue(null);
+    // プロパティストアもリセット
+    Object.keys(_propertiesStore).forEach(k => {
+      if (k !== 'SPREADSHEET_ID') delete _propertiesStore[k];
+    });
+    // キャッシュもリセット
+    Object.keys(_cacheStore).forEach(k => delete _cacheStore[k]);
   });
 
   test('logsシートが存在しない場合は重複なし', () => {
@@ -173,9 +187,9 @@ describe('_isDuplicate', () => {
     expect(_isDuplicate('some-fingerprint')).toBe(false);
   });
 
-  test('logsシートが空（行数0）の場合は重複なし', () => {
+  test('logsシートが空（行数1: ヘッダーのみ）の場合は重複なし', () => {
     const emptySheet = {
-      getLastRow: jest.fn().mockReturnValue(1), // ヘッダー行のみ
+      getLastRow: jest.fn().mockReturnValue(1),
       getRange: jest.fn().mockReturnValue({ getValues: jest.fn().mockReturnValue([]) }),
     };
     _mockSS.getSheetByName.mockReturnValue(emptySheet);

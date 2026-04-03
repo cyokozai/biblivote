@@ -192,16 +192,18 @@ window.GAS_ENDPOINT = 'https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec';
 | 項目 | 値 |
 |------|---|
 | Framework preset | None |
-| Build command | （空欄） |
+| Build command | `npm run build` |
 | Build output directory | `/` |
 | Root directory | （空欄） |
 
 5. **Save and Deploy** をクリック
 
-### 4-3. 環境変数（不要）
+### 4-3. 環境変数（Cloudflare Pages で設定）
 
-このプロジェクトはビルドステップなし（Vanilla JS）のため、サーバーサイドの環境変数は不要です。
-GAS エンドポイント URL など機密ではない設定値は `index.html` 内の `window.*` に直接記述します。
+このプロジェクトは配信自体は Vanilla JS ですが、デプロイ時には `npm run build` により `scripts/inject-env.js` を実行して設定値を注入します。
+そのため、Cloudflare Pages の **Settings → Variables and Secrets** に、注入対象の公開設定値を環境変数として登録してください。
+GAS エンドポイント URL などの公開設定値は `index.html` に直接ハードコードせず、ビルド時に注入される値を使用します。
+機密情報はフロントエンドへ注入せず、公開して問題ない値のみを Cloudflare Pages に設定してください。
 
 ### 4-4. CSP ヘッダーの確認
 

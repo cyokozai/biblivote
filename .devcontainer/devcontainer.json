@@ -14,7 +14,7 @@
     "source=biblivote_node_modules,target=/workspace/node_modules,type=volume",
     // clasp OAuth トークン（ホストで clasp login 済みの場合のみ有効）
     // 値は表示・編集しないこと。認証が必要な場合はホストで clasp login を実行する。
-    "source=${localEnv:HOME}/.clasprc.json,target=/root/.clasprc.json,type=bind,readonly"
+    "source=${localEnv:HOME}/.clasprc.json,target=/home/node/.clasprc.json,type=bind,readonly"
   ],
   "forwardPorts": [8080],
   "portsAttributes": {
@@ -24,7 +24,7 @@
     }
   },
   "postCreateCommand": "bash .devcontainer/post_create.sh",
-  "remoteUser": "root",
+  "remoteUser": "node",
   "customizations": {
     "vscode": {
       "extensions": [

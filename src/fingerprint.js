@@ -15,8 +15,13 @@ async function getFingerprint() {
     const result = await fp.get();
     return result.visitorId;
   } catch {
-    // フォールバック: UA + 現在時刻の SHA-256 ハッシュ（先頭32文字）
-    return _fallbackHash(navigator.userAgent + Date.now());
+    // フォールバック: localStorage に安定した識別子を保存して再利用する（ADR-004）
+    let fallbackId = localStorage.getItem('biblivote_fallback_id');
+    if (!fallbackId) {
+      fallbackId = _fallbackHash(navigator.userAgent + Date.now() + Math.random());
+      localStorage.setItem('biblivote_fallback_id', fallbackId);
+    }
+    return fallbackId;
   }
 }
 

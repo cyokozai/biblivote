@@ -62,7 +62,7 @@ function validateBooksPerMonth(value) {
 }
 
 /**
- * Q4/Q5: 書籍タイトルバリデーション（必須、1〜50文字）
+ * Q4/Q5: 書籍タイトルバリデーション（必須、1〜100文字）
  * @param {string|null} title
  * @returns {string|null}
  */
