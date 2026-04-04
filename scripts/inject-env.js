@@ -24,12 +24,13 @@ const HTML_PATH = path.join(__dirname, '..', 'index.html');
  * 環境変数が未設定（空文字 / undefined）の場合は変更しない。
  */
 function injectWindowVar(html, key, value) {
-  const normalizedValue = value || '';
-  const serializedValue = JSON.stringify(normalizedValue);
-  // window.KEY = '...' または window.KEY = "...\" の両パターンに対応
+  // 未設定の場合は置換せずそのまま返す
+  if (value == null || value === '') return html;
+  const serializedValue = JSON.stringify(value);
+  // 開始クォートと終了クォートを同一種類に揃えるためバックリファレンスを使用
   return html.replace(
-    new RegExp(`(window\\\\.${key}\\\\s*=\\\\s*)(['\"])[^'\"]*(['\"])`, 'g'),
-    (_, assignmentPrefix) => `${assignmentPrefix}${serializedValue}`,
+    new RegExp(`(window\\.${key}\\s*=\\s*)(['"])(?:\\\\.|(?!\\2)[^\\\\\\r\\n])*\\2`, 'g'),
+    (_, assignmentPrefix, quote) => `${assignmentPrefix}${serializedValue}`,
   );
 }
 
@@ -43,11 +44,11 @@ const vars = {
 };
 
 for (const [key, value] of Object.entries(vars)) {
-  html = injectWindowVar(html, key, value);
-  if (value) {
-    console.log(`  ✓ ${key} injected`);
-  } else {
+  if (value == null || value === '') {
     console.log(`  - ${key} skipped (not set)`);
+  } else {
+    html = injectWindowVar(html, key, value);
+    console.log(`  ✓ ${key} injected`);
   }
 }
 

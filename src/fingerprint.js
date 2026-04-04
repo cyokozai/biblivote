@@ -16,9 +16,18 @@ async function getFingerprint() {
     return result.visitorId;
   } catch {
     // フォールバック: localStorage に安定した識別子を保存して再利用する（ADR-004）
+    // Date.now() や Math.random() を含めると毎回異なる fingerprint になるため除外する
     let fallbackId = localStorage.getItem('biblivote_fallback_id');
     if (!fallbackId) {
-      fallbackId = _fallbackHash(navigator.userAgent + Date.now() + Math.random());
+      const stableInput = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width,
+        screen.height,
+        screen.colorDepth,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+      ].join('|');
+      fallbackId = await _fallbackHash(stableInput);
       localStorage.setItem('biblivote_fallback_id', fallbackId);
     }
     return fallbackId;

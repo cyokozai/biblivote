@@ -62,7 +62,7 @@ function validateBooksPerMonth(value) {
 }
 
 /**
- * Q4/Q5: 書籍タイトルバリデーション（必須、1〜100文字）
+ * Q4/Q5: 書籍タイトルバリデーション（必須、1〜50文字）
  * @param {string|null} title
  * @returns {string|null}
  */
@@ -70,8 +70,8 @@ function validateBookTitle(title) {
   if (!title || title.length === 0) {
     return '書籍タイトルを入力してください';
   }
-  if (title.length > 100) {
-    return '100文字以内で入力してください';
+  if (title.length > 50) {
+    return '50文字以内で入力してください';
   }
   return null;
 }

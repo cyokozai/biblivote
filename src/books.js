@@ -41,21 +41,22 @@ async function searchBooks(query) {
   if (!query || query.length < 3) return [];
 
   if (_cache.has(query)) return _cache.get(query);
-const params = new URLSearchParams({
-  q: `intitle:${query}`,
-  langRestrict: 'ja',
-  maxResults: '5',
-  fields: 'items(id,volumeInfo(title,authors,imageLinks,industryIdentifiers))',
-});
 
-const apiKey =
-  typeof window !== 'undefined' ? window.GOOGLE_BOOKS_API_KEY : '';
-if (apiKey) params.set('key', apiKey);
+  const params = new URLSearchParams({
+    q: `intitle:${query}`,
+    langRestrict: 'ja',
+    maxResults: '5',
+    fields: 'items(id,volumeInfo(title,authors,imageLinks,industryIdentifiers))',
+  });
 
-const res = await fetch(
-  `https://www.googleapis.com/books/v1/volumes?${params}`
-);
-if (!res.ok) throw new Error(`Books API error: ${res.status}`);
+  const apiKey =
+    typeof window !== 'undefined' ? window.GOOGLE_BOOKS_API_KEY : '';
+  if (apiKey) params.set('key', apiKey);
+
+  const res = await fetch(
+    `https://www.googleapis.com/books/v1/volumes?${params}`
+  );
+  if (!res.ok) throw new Error(`Books API error: ${res.status}`);
 
   const data = await res.json();
   if (!data.items) return [];

@@ -200,7 +200,7 @@ function _validate(body) {
   // q4_best_book
   if (!body.q4_best_book ||
       body.q4_best_book.length < 1 ||
-      body.q4_best_book.length > 100) {
+      body.q4_best_book.length > 50) {
     return { error: 'validation_error', field: 'q4_best_book' };
   }
 
@@ -212,7 +212,7 @@ function _validate(body) {
   // q5_recommendation
   if (!body.q5_recommendation ||
       body.q5_recommendation.length < 1 ||
-      body.q5_recommendation.length > 100) {
+      body.q5_recommendation.length > 50) {
     return { error: 'validation_error', field: 'q5_recommendation' };
   }
 
