@@ -209,7 +209,7 @@
             @input="onQ4Input($event.target.value)"
             :class="errors.q4_best_book ? 'error-input' : ''"
             placeholder="例: Kubernetes完全ガイド"
-            maxlength="100"
+            maxlength="50"
             autocomplete="off"
           >
 
@@ -260,7 +260,7 @@
     <div x-show="step === 5">
       <div class="content card-search" :class="direction > 0 ? 'step-wrap' : 'step-wrap back'">
         <h2 class="step-title">イチオシの技術書を教えてください</h2>
-        <p class="step-sub">書籍名で検索するか、直接入力してください（100文字以内）</p>
+        <p class="step-sub">書籍名で検索するか、直接入力してください（50文字以内）</p>
 
         <div class="search-wrap" @click.outside="closeDropdown('q5')">
           <input
@@ -269,7 +269,7 @@
             @input="onQ5Input($event.target.value)"
             :class="errors.q5_recommendation ? 'error-input' : ''"
             placeholder="例: 入門 監視"
-            maxlength="100"
+            maxlength="50"
             autocomplete="off"
           >
 

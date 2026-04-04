@@ -75,8 +75,8 @@ document.addEventListener('alpine:init', () => {
       this.GRAFANA_URL = window.GRAFANA_URL || '';
       this.SHARE_TEXT = window.SHARE_TEXT || '';
 
-      this._debQ4 = createDebounce((q) => this._doSearch('q4', q), 600);
-      this._debQ5 = createDebounce((q) => this._doSearch('q5', q), 600);
+      this._debQ4 = createDebounce((q) => this._doSearch('q4', q), 300);
+      this._debQ5 = createDebounce((q) => this._doSearch('q5', q), 300);
 
       // reCAPTCHA v3: サイトキーが設定されている場合のみ動的に読み込む
       if (window.RECAPTCHA_SITE_KEY) {
