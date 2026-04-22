@@ -15,6 +15,9 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
+    outputs:
+      tag: ${{ steps.next_tag.outputs.tag }}
+      skip: ${{ steps.next_tag.outputs.skip }}
 
     steps:
       - name: Checkout
@@ -78,3 +81,14 @@ jobs:
           tag_name: ${{ steps.next_tag.outputs.tag }}
           name: ${{ steps.next_tag.outputs.tag }}
           generate_release_notes: true
+
+  build-image:
+    needs: create-release
+    if: needs.create-release.outputs.skip != 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      tag: ${{ needs.create-release.outputs.tag }}
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: write

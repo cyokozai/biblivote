@@ -1,13 +1,17 @@
 name: release
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
         description: "Image tag (e.g. v1.0.0)"
         required: true
+  workflow_call:
+    inputs:
+      tag:
+        description: "Image tag"
+        required: true
+        type: string
 
 jobs:
   build-and-push:
@@ -27,15 +31,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve image tag
-        id: tag
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "value=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          else
-            echo "value=${{ inputs.tag }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -43,5 +38,5 @@ jobs:
           file: ./docker/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ steps.tag.outputs.value }}
+            ghcr.io/${{ github.repository }}:${{ inputs.tag }}
             ghcr.io/${{ github.repository }}:latest
