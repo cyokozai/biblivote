@@ -15,6 +15,16 @@ document.addEventListener('alpine:init', () => {
     submitting: false,
     submitError: null,
 
+    // チケット状態（FR-BT-050〜058）
+    ticket: {
+      voteId: null,
+      exists: false,
+      redeemed: false,
+      withinHours: true,
+      loading: false,
+      slideValue: 0,
+    },
+
     // ===== 定数 =====
     GENRES: [
       'インフラ / クラウド',
@@ -75,6 +85,13 @@ document.addEventListener('alpine:init', () => {
       this.GRAFANA_URL = window.GRAFANA_URL || '';
       this.SHARE_TEXT = window.SHARE_TEXT || '';
 
+      // localStorage から voteId を復元し、チケット状態を取得（FR-BT-051）
+      const savedVoteId = localStorage.getItem('biblivote_vote_id');
+      if (savedVoteId) {
+        this.ticket.voteId = savedVoteId;
+        this.loadTicket();
+      }
+
       this._debQ4 = createDebounce((q) => this._doSearch('q4', q), 300);
       this._debQ5 = createDebounce((q) => this._doSearch('q5', q), 300);
 
@@ -119,12 +136,14 @@ document.addEventListener('alpine:init', () => {
       // 手動入力時は選択済み書影をリセット
       this.form.q4_isbn = '';
       this.form.q4_thumbnail = '';
+      this.bs.q4.error = false;
       this._debQ4(q);
     },
 
     onQ5Input(q) {
       this.form.q5_isbn = '';
       this.form.q5_thumbnail = '';
+      this.bs.q5.error = false;
       this._debQ5(q);
     },
 
@@ -154,8 +173,9 @@ document.addEventListener('alpine:init', () => {
       this.bs[field].error = false;
       try {
         this.bs[field].results = await searchBooks(query);
-      } catch {
-        this.bs[field].error = true;
+      } catch (err) {
+        // 429: レート制限、それ以外: サーバーエラー
+        this.bs[field].error = err && err.status === 429 ? 'rate_limited' : 'server_error';
         this.bs[field].results = [];
       } finally {
         this.bs[field].loading = false;
@@ -190,6 +210,72 @@ document.addEventListener('alpine:init', () => {
       }
 
       return true;
+    },
+
+    // ===== チケット =====
+
+    /** check_ticket API を呼び出してチケット状態を更新する（FR-BT-051） */
+    async loadTicket() {
+      if (!this.ticket.voteId) return;
+      const endpoint = window.GAS_ENDPOINT;
+      if (!endpoint) {
+        // Dev モード: API なしでもチケットを表示する
+        this.ticket.exists = true;
+        return;
+      }
+      this.ticket.loading = true;
+      try {
+        const res = await fetch(
+          `${endpoint}?action=check_ticket&voteId=${encodeURIComponent(this.ticket.voteId)}`
+        );
+        const json = await res.json();
+        if (json.exists) {
+          this.ticket.exists = true;
+          this.ticket.redeemed = json.redeemed;
+          this.ticket.withinHours = json.withinHours;
+        } else {
+          this.ticket.exists = false;
+        }
+      } catch {
+        // エラーはサイレントに処理（チケット非表示のまま）
+      } finally {
+        this.ticket.loading = false;
+      }
+    },
+
+    /** スライド操作完了時に呼び出す（FR-BT-054〜056） */
+    async onTicketSlide() {
+      if (this.ticket.slideValue < 90) {
+        // 90% 未満でリリースした場合はリセット
+        this.ticket.slideValue = 0;
+        return;
+      }
+      await this.redeemTicket();
+    },
+
+    /** redeem API を呼び出して栞引換を申告する（FR-BT-054〜056） */
+    async redeemTicket() {
+      if (!this.ticket.voteId || this.ticket.redeemed || !this.ticket.withinHours) return;
+      const endpoint = window.GAS_ENDPOINT;
+      if (!endpoint) {
+        // Dev モード: 成功をシミュレート
+        this.ticket.redeemed = true;
+        return;
+      }
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'redeem', voteId: this.ticket.voteId }),
+        });
+        const json = await res.json();
+        if (json.status === 'redeemed' || json.status === 'already_redeemed') {
+          this.ticket.redeemed = true;
+        }
+      } catch {
+        // エラーはサイレントに処理（スライダーをリセット）
+        this.ticket.slideValue = 0;
+      }
     },
 
     // ===== 送信 =====
@@ -264,14 +350,27 @@ document.addEventListener('alpine:init', () => {
           if (!json.ok) {
             throw new Error(json.error || `Error ${json.status}`);
           }
+
+          // voteId を localStorage に保存（FR-BT-050）
+          if (json.voteId) {
+            localStorage.setItem('biblivote_vote_id', json.voteId);
+            this.ticket.voteId = json.voteId;
+          }
         } else {
           // Dev モード: GAS エンドポイント未設定の場合は成功をシミュレート
           await new Promise((r) => setTimeout(r, 600));
+          // Dev モードでも voteId を localStorage に保存してリロード後も表示できるようにする
+          const devVoteId = 'dev-' + Date.now();
+          localStorage.setItem('biblivote_vote_id', devVoteId);
+          this.ticket.voteId = devVoteId;
+          this.ticket.exists = true;
         }
 
         localStorage.setItem('biblivote_voted', '1');
         this.direction = 1;
         this.step = 7;
+        // チケット状態を最新化（FR-BT-051）
+        await this.loadTicket();
       } catch {
         this.submitError =
           '送信に失敗しました。時間をおいて再度お試しください。';
