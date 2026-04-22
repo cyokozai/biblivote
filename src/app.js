@@ -91,8 +91,8 @@ document.addEventListener('alpine:init', () => {
       if (savedVoteId) {
         this.ticket.voteId = savedVoteId;
         // キャッシュ値で即時表示（API レスポンス前のフリッカー防止）
+        // loading は loadTicket() 側でのみ管理するためここではセットしない
         this.ticket.exists = true;
-        this.ticket.loading = true;
         if (localStorage.getItem('biblivote_redeemed') === '1') {
           this.ticket.redeemed = true;
         }
