@@ -3,8 +3,10 @@
  * Biblivote バックエンド: 投票受付 → Spreadsheet 書き込み
  *
  * スクリプトプロパティ（スクリプトエディタ > プロジェクトの設定 で設定）:
- *   SPREADSHEET_ID  : 対象スプレッドシートの ID
- *   RECAPTCHA_SECRET: reCAPTCHA v3 シークレットキー
+ *   SPREADSHEET_ID   : 対象スプレッドシートの ID
+ *   RECAPTCHA_SECRET : reCAPTCHA v3 シークレットキー
+ *   STORE_OPEN_ISO   : 書店コーナー開店時刻（JST ISO 8601, 例: 2026-05-14T10:00:00+09:00）
+ *   STORE_CLOSE_ISO  : 書店コーナー閉店時刻（JST ISO 8601, 例: 2026-05-15T18:00:00+09:00）
  */
 
 var VALID_GENRES = [
@@ -24,7 +26,7 @@ var VALID_FORMATS = ['紙派', '電子派', '両方使い分ける'];
 // ===== エントリーポイント =====
 
 /**
- * doGet: CSRFトークン発行（action=token）
+ * doGet: CSRFトークン発行（action=token）/ チケット確認（action=check_ticket）
  */
 function doGet(e) {
   var action = e && e.parameter && e.parameter.action;
@@ -35,19 +37,33 @@ function doGet(e) {
     return _json({ csrfToken: token });
   }
 
+  if (action === 'check_ticket') {
+    return _handleCheckTicket(e.parameter.voteId);
+  }
+
   return _json({ error: 'unknown_action' }, 400);
 }
 
 /**
- * doPost: 投票受付
- * 処理順序: CSRF → reCAPTCHA → 重複チェック → バリデーション → 書き込み
+ * doPost: 投票受付 / 栞引換（action=redeem）
+ * 投票処理順序: CSRF → reCAPTCHA → 重複チェック → バリデーション → 書き込み
  */
 function doPost(e) {
+  var body;
+  try {
+    body = JSON.parse(e.postData.contents);
+  } catch (parseErr) {
+    return _json({ error: 'invalid_request' }, 400);
+  }
+
+  // action=redeem は別フローで処理（LockService は _handleRedeem 内で管理）
+  if (body && body.action === 'redeem') {
+    return _handleRedeem(body);
+  }
+
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(30000);
-
-    var body = JSON.parse(e.postData.contents);
 
     // 0. ハニーポット検証（ADR-004: 多層防御）
     var website = body && body.website;
@@ -84,16 +100,108 @@ function doPost(e) {
     }
 
     // 5-6. Spreadsheet 書き込み（FR-053-5,6）
-    _writeVote(body);
+    var voteId = _writeVote(body);
     _writeLog(body.fingerprint, 'success');
 
-    return _json({ status: 'ok' });
+    return _json({ status: 'ok', voteId: voteId });
   } catch (err) {
     Logger.log(err.toString());
     return _json({ error: 'internal_error' }, 500);
   } finally {
     lock.releaseLock();
   }
+}
+
+// ===== チケット機能 =====
+
+/**
+ * チケット確認ハンドラ（FR-BT-020〜023）
+ */
+function _handleCheckTicket(voteId) {
+  if (!voteId) {
+    return _json({ exists: false });
+  }
+
+  var rowNum = _findRowByVoteId(voteId);
+  if (rowNum === -1) {
+    return _json({ exists: false });
+  }
+
+  var sheet = _getOrCreateSheet('votes');
+  var redeemed = sheet.getRange(rowNum, 11).getValue() === true;
+  var withinHours = _isWithinStoreHours();
+
+  return _json({ exists: true, redeemed: redeemed, withinHours: withinHours });
+}
+
+/**
+ * 栞引換ハンドラ（FR-BT-030〜036）
+ */
+function _handleRedeem(body) {
+  if (!_isWithinStoreHours()) {
+    return _json({ error: 'outside_hours' }, 403);
+  }
+
+  var voteId = body && body.voteId;
+  if (!voteId) {
+    return _json({ error: 'not_found' }, 404);
+  }
+
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+
+    var rowNum = _findRowByVoteId(voteId);
+    if (rowNum === -1) {
+      return _json({ error: 'not_found' }, 404);
+    }
+
+    var sheet = _getOrCreateSheet('votes');
+    // 列K（11列目、1-indexed）が redeemed フラグ
+    var redeemed = sheet.getRange(rowNum, 11).getValue();
+
+    if (redeemed === true) {
+      return _json({ status: 'already_redeemed' });
+    }
+
+    sheet.getRange(rowNum, 11).setValue(true);
+    return _json({ status: 'redeemed' });
+  } catch (err) {
+    Logger.log(err.toString());
+    return _json({ error: 'internal_error' }, 500);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * 書店コーナー受付時間内かどうかを返す（FR-BT-040〜041）
+ * STORE_OPEN_ISO / STORE_CLOSE_ISO が未設定の場合は常に true（開発用フォールバック）
+ */
+function _isWithinStoreHours() {
+  var props = PropertiesService.getScriptProperties();
+  var open = props.getProperty('STORE_OPEN_ISO');
+  var close = props.getProperty('STORE_CLOSE_ISO');
+  if (!open || !close) return true;
+  var now = new Date();
+  return now >= new Date(open) && now <= new Date(close);
+}
+
+/**
+ * votes シートから voteId に対応する行番号（1-indexed）を返す（FR-BT-001）
+ * 見つからない場合は -1 を返す
+ */
+function _findRowByVoteId(voteId) {
+  var sheet = _getOrCreateSheet('votes');
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][9] === voteId) { // 列J（0-indexed: 9）
+      return i + 1; // 1-indexed 行番号
+    }
+  }
+  return -1;
 }
 
 // ===== 内部関数 =====
@@ -229,8 +337,13 @@ function _validate(body) {
   return null;
 }
 
+/**
+ * votes シートに投票行を追記し、生成した voteId を返す（FR-BT-010〜012）
+ * 列A〜I: 既存データ, 列J: voteId, 列K: redeemed（初期値 false）
+ */
 function _writeVote(body) {
   var sheet = _getOrCreateSheet('votes');
+  var voteId = Utilities.getUuid();
   sheet.appendRow([
     new Date().toISOString(),
     body.q1_genres.join(','),
@@ -241,7 +354,10 @@ function _writeVote(body) {
     body.q5_recommendation,
     body.q5_isbn || '',
     body.q6_registered,
+    voteId,  // 列J（FR-BT-001）
+    false,   // redeemed（FR-BT-002）
   ]);
+  return voteId;
 }
 
 function _writeLog(fingerprint, result) {
@@ -295,5 +411,17 @@ function _json(data, status) {
 
 // ===== Jest テスト用エクスポート（GAS 環境では無視される） =====
 if (typeof module !== 'undefined') {
-  module.exports = { _validate, _verifyCsrf, _isDuplicate, _writeVote, _writeLog };
+  module.exports = {
+    _validate,
+    _verifyCsrf,
+    _isDuplicate,
+    _writeVote,
+    _writeLog,
+    _isWithinStoreHours,
+    _findRowByVoteId,
+    _handleCheckTicket,
+    _handleRedeem,
+    doGet,
+    doPost,
+  };
 }
