@@ -23,6 +23,7 @@ document.addEventListener('alpine:init', () => {
       withinHours: true,
       loading: false,
       slideValue: 0,
+      justRedeemed: false,
     },
 
     // ===== 定数 =====
@@ -242,7 +243,11 @@ document.addEventListener('alpine:init', () => {
             localStorage.setItem('biblivote_redeemed', '1');
           }
         } else {
+          // 無効な voteId を破棄して UI が表示されないようにする
           this.ticket.exists = false;
+          this.ticket.voteId = null;
+          localStorage.removeItem('biblivote_vote_id');
+          localStorage.removeItem('biblivote_redeemed');
         }
       } catch {
         // エラーはサイレントに処理（チケット非表示のまま）
@@ -268,6 +273,7 @@ document.addEventListener('alpine:init', () => {
       if (!endpoint) {
         // Dev モード: 成功をシミュレート
         this.ticket.redeemed = true;
+        this.ticket.justRedeemed = true;
         localStorage.setItem('biblivote_redeemed', '1');
         return;
       }
@@ -277,10 +283,22 @@ document.addEventListener('alpine:init', () => {
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({ action: 'redeem', voteId: this.ticket.voteId }),
         });
+        if (!res.ok) {
+          // 403（outside_hours）や 404（not_found）等の非 2xx はスライダーをリセット
+          this.ticket.slideValue = 0;
+          return;
+        }
         const json = await res.json();
-        if (json.status === 'redeemed' || json.status === 'already_redeemed') {
+        if (json.status === 'redeemed') {
           this.ticket.redeemed = true;
+          this.ticket.justRedeemed = true;
           localStorage.setItem('biblivote_redeemed', '1');
+        } else if (json.status === 'already_redeemed') {
+          this.ticket.redeemed = true;
+          this.ticket.justRedeemed = false;
+          localStorage.setItem('biblivote_redeemed', '1');
+        } else {
+          this.ticket.slideValue = 0;
         }
       } catch {
         // エラーはサイレントに処理（スライダーをリセット）
@@ -363,8 +381,12 @@ document.addEventListener('alpine:init', () => {
 
           // voteId を localStorage に保存（FR-BT-050）
           if (json.voteId) {
+            // 古い引換状態をリセット（別 voteId の redeemed フラグが残らないよう）
+            localStorage.removeItem('biblivote_redeemed');
             localStorage.setItem('biblivote_vote_id', json.voteId);
             this.ticket.voteId = json.voteId;
+            this.ticket.redeemed = false;
+            this.ticket.slideValue = 0;
           }
         } else {
           // Dev モード: GAS エンドポイント未設定の場合は成功をシミュレート

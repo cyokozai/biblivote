@@ -296,12 +296,8 @@ describe('_findRowByVoteId', () => {
     const voteId = 'test-uuid-001';
     const sheet = {
       getLastRow: jest.fn().mockReturnValue(3),
-      getDataRange: jest.fn().mockReturnValue({
-        getValues: jest.fn().mockReturnValue([
-          ['header'],
-          ['2026-05-14', 'fp1', 'fmt', 1, 'book1', '', 'rec1', '', true, voteId, false],
-          ['2026-05-14', 'fp2', 'fmt', 2, 'book2', '', 'rec2', '', true, 'other-uuid', false],
-        ]),
+      getRange: jest.fn().mockReturnValue({
+        getValues: jest.fn().mockReturnValue([[voteId], ['other-uuid']]),
       }),
     };
     _mockSS.getSheetByName.mockReturnValue(null);
@@ -312,11 +308,8 @@ describe('_findRowByVoteId', () => {
   test('対応する voteId が存在しない場合は -1', () => {
     const sheet = {
       getLastRow: jest.fn().mockReturnValue(2),
-      getDataRange: jest.fn().mockReturnValue({
-        getValues: jest.fn().mockReturnValue([
-          ['header'],
-          ['2026-05-14', 'fp1', 'fmt', 1, 'book1', '', 'rec1', '', true, 'other-uuid', false],
-        ]),
+      getRange: jest.fn().mockReturnValue({
+        getValues: jest.fn().mockReturnValue([['other-uuid']]),
       }),
     };
     _mockSS.getSheetByName.mockReturnValue(null);
@@ -391,13 +384,13 @@ describe('_handleCheckTicket', () => {
     const mockGetValue = jest.fn().mockReturnValue(false); // redeemed = false
     const sheet = {
       getLastRow: jest.fn().mockReturnValue(2),
-      getDataRange: jest.fn().mockReturnValue({
-        getValues: jest.fn().mockReturnValue([
-          ['header'],
-          ['ts', 'fp', 'fmt', 1, 'book', '', 'rec', '', true, voteId, false],
-        ]),
+      // getRange の呼び出しパターンで分岐:
+      //   4引数 (2,10,n,1) → _findRowByVoteId 用: getValues() を返す
+      //   2引数 (row,11)   → redeemed 列の getValue/setValue 用
+      getRange: jest.fn().mockImplementation((...args) => {
+        if (args.length === 4) return { getValues: jest.fn().mockReturnValue([[voteId]]) };
+        return { getValue: mockGetValue };
       }),
-      getRange: jest.fn().mockReturnValue({ getValue: mockGetValue }),
     };
     _mockSS.getSheetByName.mockReturnValue(null);
     _mockSS.insertSheet.mockReturnValue(sheet);
@@ -411,13 +404,10 @@ describe('_handleCheckTicket', () => {
     const mockGetValue = jest.fn().mockReturnValue(true); // redeemed = true
     const sheet = {
       getLastRow: jest.fn().mockReturnValue(2),
-      getDataRange: jest.fn().mockReturnValue({
-        getValues: jest.fn().mockReturnValue([
-          ['header'],
-          ['ts', 'fp', 'fmt', 1, 'book', '', 'rec', '', true, voteId, true],
-        ]),
+      getRange: jest.fn().mockImplementation((...args) => {
+        if (args.length === 4) return { getValues: jest.fn().mockReturnValue([[voteId]]) };
+        return { getValue: mockGetValue };
       }),
-      getRange: jest.fn().mockReturnValue({ getValue: mockGetValue }),
     };
     _mockSS.getSheetByName.mockReturnValue(null);
     _mockSS.insertSheet.mockReturnValue(sheet);
@@ -447,9 +437,6 @@ describe('_handleRedeem', () => {
   test('voteId が存在しない場合は 404 not_found', () => {
     const sheet = {
       getLastRow: jest.fn().mockReturnValue(1),
-      getDataRange: jest.fn().mockReturnValue({
-        getValues: jest.fn().mockReturnValue([['header']]),
-      }),
     };
     _mockSS.getSheetByName.mockReturnValue(null);
     _mockSS.insertSheet.mockReturnValue(sheet);
@@ -463,13 +450,10 @@ describe('_handleRedeem', () => {
     const mockGetValue = jest.fn().mockReturnValue(true);
     const sheet = {
       getLastRow: jest.fn().mockReturnValue(2),
-      getDataRange: jest.fn().mockReturnValue({
-        getValues: jest.fn().mockReturnValue([
-          ['header'],
-          ['ts', 'fp', 'fmt', 1, 'book', '', 'rec', '', true, voteId, true],
-        ]),
+      getRange: jest.fn().mockImplementation((...args) => {
+        if (args.length === 4) return { getValues: jest.fn().mockReturnValue([[voteId]]) };
+        return { getValue: mockGetValue, setValue: jest.fn() };
       }),
-      getRange: jest.fn().mockReturnValue({ getValue: mockGetValue, setValue: jest.fn() }),
     };
     _mockSS.getSheetByName.mockReturnValue(null);
     _mockSS.insertSheet.mockReturnValue(sheet);
@@ -484,13 +468,10 @@ describe('_handleRedeem', () => {
     const mockGetValue = jest.fn().mockReturnValue(false);
     const sheet = {
       getLastRow: jest.fn().mockReturnValue(2),
-      getDataRange: jest.fn().mockReturnValue({
-        getValues: jest.fn().mockReturnValue([
-          ['header'],
-          ['ts', 'fp', 'fmt', 1, 'book', '', 'rec', '', true, voteId, false],
-        ]),
+      getRange: jest.fn().mockImplementation((...args) => {
+        if (args.length === 4) return { getValues: jest.fn().mockReturnValue([[voteId]]) };
+        return { getValue: mockGetValue, setValue: mockSetValue };
       }),
-      getRange: jest.fn().mockReturnValue({ getValue: mockGetValue, setValue: mockSetValue }),
     };
     _mockSS.getSheetByName.mockReturnValue(null);
     _mockSS.insertSheet.mockReturnValue(sheet);
@@ -507,13 +488,10 @@ describe('_handleRedeem', () => {
     const mockSetValue = jest.fn();
     const sheet = {
       getLastRow: jest.fn().mockReturnValue(2),
-      getDataRange: jest.fn().mockReturnValue({
-        getValues: jest.fn().mockReturnValue([
-          ['header'],
-          ['ts', 'fp', 'fmt', 1, 'book', '', 'rec', '', true, voteId, false],
-        ]),
+      getRange: jest.fn().mockImplementation((...args) => {
+        if (args.length === 4) return { getValues: jest.fn().mockReturnValue([[voteId]]) };
+        return { getValue: jest.fn().mockReturnValue(false), setValue: mockSetValue };
       }),
-      getRange: jest.fn().mockReturnValue({ getValue: jest.fn().mockReturnValue(false), setValue: mockSetValue }),
     };
     _mockSS.getSheetByName.mockReturnValue(null);
     _mockSS.insertSheet.mockReturnValue(sheet);

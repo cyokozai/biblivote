@@ -53,7 +53,7 @@
     </div>
 
     <!-- スライドチケット（再訪問時も表示: FR-BT-058） -->
-    <template x-if="ticket.voteId">
+    <template x-if="ticket.voteId && ticket.exists">
       <div class="ticket-wrap">
         <div class="ticket-label">📚 書店コーナー 栞プレゼントチケット</div>
         <div class="ticket">
@@ -460,7 +460,7 @@
         </div>
 
         <!-- スライドチケット（FR-BT-050〜058） -->
-        <template x-if="ticket.voteId">
+        <template x-if="ticket.voteId && ticket.exists">
           <div class="ticket-wrap">
             <div class="ticket-label">📚 書店コーナー 栞プレゼントチケット</div>
             <div class="ticket">

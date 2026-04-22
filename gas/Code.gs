@@ -195,10 +195,11 @@ function _findRowByVoteId(voteId) {
   var sheet = _getOrCreateSheet('votes');
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return -1;
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (data[i][9] === voteId) { // 列J（0-indexed: 9）
-      return i + 1; // 1-indexed 行番号
+  // 列J（voteId列）のみ取得して読み取り量を最小化
+  var colJ = sheet.getRange(2, 10, lastRow - 1, 1).getValues();
+  for (var i = 0; i < colJ.length; i++) {
+    if (colJ[i][0] === voteId) {
+      return i + 2; // 1-indexed 行番号（ヘッダー行を考慮して +2）
     }
   }
   return -1;
