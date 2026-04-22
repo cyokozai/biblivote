@@ -557,3 +557,143 @@ input:focus {
   opacity: 0;
   pointer-events: none;
 }
+
+/* ===== Slide Ticket (FR-BT-052〜058) ===== */
+.ticket-wrap {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--slate-200);
+}
+
+.ticket-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--slate-500);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.ticket {
+  border: 2px solid var(--blue-200);
+  border-radius: var(--radius);
+  background: var(--blue-50);
+  padding: 20px 16px;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticket-loading {
+  font-size: 14px;
+  color: var(--slate-500);
+}
+
+/* State containers */
+.ticket-state {
+  width: 100%;
+  text-align: center;
+}
+
+.ticket-state-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.ticket-state-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.ticket-state-sub {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--slate-500);
+}
+
+.ticket-state-text--sub {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate-500);
+  margin-top: 8px;
+}
+
+/* Success state (just redeemed) */
+.ticket-state--success .ticket-state-text {
+  color: #16a34a;
+}
+
+/* Used state */
+.ticket-state--used {
+  opacity: .75;
+}
+
+.ticket-state--used .ticket-state-text {
+  color: var(--slate-500);
+}
+
+/* Slide component */
+.ticket-slide-wrap {
+  width: 100%;
+}
+
+.ticket-slide-track {
+  position: relative;
+  height: 52px;
+  background: #fff;
+  border: 1.5px solid var(--blue-200);
+  border-radius: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ticket-slide-hint {
+  position: absolute;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate-400);
+  pointer-events: none;
+  user-select: none;
+}
+
+.ticket-slider {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: grab;
+  -webkit-appearance: none;
+  margin: 0;
+  padding: 0;
+  z-index: 1;
+}
+
+.ticket-slider:active { cursor: grabbing; }
+
+/* Disabled state (outside hours) */
+.ticket-slide-wrap--disabled .ticket-slide-track {
+  background: var(--slate-100);
+  border-color: var(--slate-200);
+}
+
+.ticket-slide-wrap--disabled .ticket-slide-hint {
+  color: var(--slate-400);
+}
+
+.ticket-instruction {
+  font-size: 13px;
+  color: var(--slate-500);
+  line-height: 1.75;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.ticket-instruction strong {
+  color: var(--slate-700);
+  font-weight: 600;
+}
