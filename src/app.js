@@ -90,7 +90,9 @@ document.addEventListener('alpine:init', () => {
       const savedVoteId = localStorage.getItem('biblivote_vote_id');
       if (savedVoteId) {
         this.ticket.voteId = savedVoteId;
-        // redeemed を先にキャッシュから復元しておく（API レスポンス前のフリッカー防止）
+        // キャッシュ値で即時表示（API レスポンス前のフリッカー防止）
+        this.ticket.exists = true;
+        this.ticket.loading = true;
         if (localStorage.getItem('biblivote_redeemed') === '1') {
           this.ticket.redeemed = true;
         }
@@ -385,17 +387,24 @@ document.addEventListener('alpine:init', () => {
             localStorage.removeItem('biblivote_redeemed');
             localStorage.setItem('biblivote_vote_id', json.voteId);
             this.ticket.voteId = json.voteId;
+            this.ticket.exists = true;
             this.ticket.redeemed = false;
             this.ticket.slideValue = 0;
+            this.ticket.justRedeemed = false;
           }
         } else {
           // Dev モード: GAS エンドポイント未設定の場合は成功をシミュレート
           await new Promise((r) => setTimeout(r, 600));
           // Dev モードでも voteId を localStorage に保存してリロード後も表示できるようにする
           const devVoteId = 'dev-' + Date.now();
+          // 古い引換状態をリセット（別 voteId の redeemed フラグが残らないよう）
+          localStorage.removeItem('biblivote_redeemed');
           localStorage.setItem('biblivote_vote_id', devVoteId);
           this.ticket.voteId = devVoteId;
           this.ticket.exists = true;
+          this.ticket.redeemed = false;
+          this.ticket.slideValue = 0;
+          this.ticket.justRedeemed = false;
         }
 
         localStorage.setItem('biblivote_voted', '1');
