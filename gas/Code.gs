@@ -108,7 +108,9 @@ function doPost(e) {
     Logger.log(err.toString());
     return _json({ error: 'internal_error' }, 500);
   } finally {
-    lock.releaseLock();
+    if (lock.hasLock()) {
+      lock.releaseLock();
+    }
   }
 }
 
@@ -170,7 +172,9 @@ function _handleRedeem(body) {
     Logger.log(err.toString());
     return _json({ error: 'internal_error' }, 500);
   } finally {
-    lock.releaseLock();
+    if (lock.hasLock()) {
+      lock.releaseLock();
+    }
   }
 }
 

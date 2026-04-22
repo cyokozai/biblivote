@@ -49,6 +49,7 @@ global.Utilities = { getUuid: jest.fn().mockReturnValue('mock-uuid') };
 global.LockService = {
   getScriptLock: () => ({
     waitLock: jest.fn(),
+    hasLock: jest.fn().mockReturnValue(true),
     releaseLock: jest.fn(),
   }),
 };
