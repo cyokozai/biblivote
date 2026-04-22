@@ -1,0 +1,70 @@
+name: auto-release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get merged PR labels
+        id: pr_labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # マージコミットに紐づく PR を GitHub API で取得
+          labels=$(gh api \
+            "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+            --jq '[.[0].labels[].name] | join(",")' 2>/dev/null || echo "")
+          echo "labels=${labels}" >> "$GITHUB_OUTPUT"
+          echo "Detected labels: ${labels}"
+
+      - name: Resolve next version tag
+        id: next_tag
+        run: |
+          latest=$(git tag --sort=-version:refname \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -z "$latest" ]; then
+            latest="v0.0.0"
+          fi
+          version="${latest#v}"
+          IFS='.' read -r major minor patch <<< "$version"
+
+          labels="${{ steps.pr_labels.outputs.labels }}"
+
+          if echo "${labels}" | grep -q "major"; then
+            new_tag="v$((major + 1)).0.0"
+            bump="major"
+          elif echo "${labels}" | grep -q "minor"; then
+            new_tag="v${major}.$((minor + 1)).0"
+            bump="minor"
+          else
+            new_tag="v${major}.${minor}.$((patch + 1))"
+            bump="patch"
+          fi
+
+          echo "tag=${new_tag}" >> "$GITHUB_OUTPUT"
+          echo "bump=${bump}" >> "$GITHUB_OUTPUT"
+          echo "Bump type: ${bump} → ${latest} → ${new_tag}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.next_tag.outputs.tag }}
+          name: ${{ steps.next_tag.outputs.tag }}
+          generate_release_notes: true
