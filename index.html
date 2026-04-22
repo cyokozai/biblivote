@@ -19,12 +19,11 @@
     );
   </script>
 
-  <!-- FingerprintJS OSS v3 (CDN) -->
+  <!-- FingerprintJS OSS v3 (CDN: UMD ビルドを使用して ES module SyntaxError を回避) -->
   <script>
-    // FingerprintJS の CDN 読み込み失敗時は fingerprint.js がフォールバックを使用
     window.FingerprintJS = window.FingerprintJS || null;
   </script>
-  <script async src="https://openfpcdn.io/fingerprintjs/v3"
+  <script async src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"
     onload="window.FingerprintJS = FingerprintJS"
     onerror="console.warn('FingerprintJS CDN failed, using fallback')">
   </script>
@@ -62,10 +61,9 @@
             <div class="ticket-loading">確認中…</div>
           </template>
           <template x-if="!ticket.loading && ticket.redeemed">
-            <div class="ticket-state ticket-state--success">
-              <div class="ticket-state-icon">🎁</div>
-              <div class="ticket-state-text">栞プレゼント対象</div>
-              <div class="ticket-state-sub">店員にこの画面をお見せください</div>
+            <div class="ticket-state ticket-state--used">
+              <div class="ticket-state-icon">✅</div>
+              <div class="ticket-state-text">交換済み</div>
             </div>
           </template>
           <template x-if="!ticket.loading && !ticket.redeemed && !ticket.withinHours">

@@ -621,11 +621,6 @@ input:focus {
   margin-top: 8px;
 }
 
-/* Success state (just redeemed) */
-.ticket-state--success .ticket-state-text {
-  color: #16a34a;
-}
-
 /* Used state */
 .ticket-state--used {
   opacity: .75;

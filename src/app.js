@@ -85,11 +85,15 @@ document.addEventListener('alpine:init', () => {
       this.GRAFANA_URL = window.GRAFANA_URL || '';
       this.SHARE_TEXT = window.SHARE_TEXT || '';
 
-      // localStorage から voteId を復元し、チケット状態を取得（FR-BT-051）
+      // localStorage から voteId・redeemed を復元（リロード後も即時表示）
       const savedVoteId = localStorage.getItem('biblivote_vote_id');
       if (savedVoteId) {
         this.ticket.voteId = savedVoteId;
-        this.loadTicket();
+        // redeemed を先にキャッシュから復元しておく（API レスポンス前のフリッカー防止）
+        if (localStorage.getItem('biblivote_redeemed') === '1') {
+          this.ticket.redeemed = true;
+        }
+        this.loadTicket(); // API で最新状態を上書き
       }
 
       this._debQ4 = createDebounce((q) => this._doSearch('q4', q), 300);
@@ -233,6 +237,10 @@ document.addEventListener('alpine:init', () => {
           this.ticket.exists = true;
           this.ticket.redeemed = json.redeemed;
           this.ticket.withinHours = json.withinHours;
+          // API の確定値を localStorage に同期
+          if (json.redeemed) {
+            localStorage.setItem('biblivote_redeemed', '1');
+          }
         } else {
           this.ticket.exists = false;
         }
@@ -260,6 +268,7 @@ document.addEventListener('alpine:init', () => {
       if (!endpoint) {
         // Dev モード: 成功をシミュレート
         this.ticket.redeemed = true;
+        localStorage.setItem('biblivote_redeemed', '1');
         return;
       }
       try {
@@ -271,6 +280,7 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json();
         if (json.status === 'redeemed' || json.status === 'already_redeemed') {
           this.ticket.redeemed = true;
+          localStorage.setItem('biblivote_redeemed', '1');
         }
       } catch {
         // エラーはサイレントに処理（スライダーをリセット）
