@@ -89,3 +89,6 @@ jobs:
     with:
       tag: ${{ needs.create-release.outputs.tag }}
     secrets: inherit
+    permissions:
+      contents: read
+      packages: write
