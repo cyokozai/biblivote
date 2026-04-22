@@ -19,12 +19,11 @@
     );
   </script>
 
-  <!-- FingerprintJS OSS v3 (CDN) -->
+  <!-- FingerprintJS OSS v3 (CDN: UMD ビルドを使用して ES module SyntaxError を回避) -->
   <script>
-    // FingerprintJS の CDN 読み込み失敗時は fingerprint.js がフォールバックを使用
     window.FingerprintJS = window.FingerprintJS || null;
   </script>
-  <script async src="https://openfpcdn.io/fingerprintjs/v3"
+  <script async src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"
     onload="window.FingerprintJS = FingerprintJS"
     onerror="console.warn('FingerprintJS CDN failed, using fallback')">
   </script>
@@ -52,6 +51,57 @@
         ご協力ありがとうございました！
       </p>
     </div>
+
+    <!-- スライドチケット（再訪問時も表示: FR-BT-058） -->
+    <template x-if="ticket.voteId && ticket.exists">
+      <div class="ticket-wrap">
+        <div class="ticket-label">📚 書店コーナー 栞プレゼントチケット</div>
+        <div class="ticket">
+          <template x-if="ticket.loading">
+            <div class="ticket-loading">確認中…</div>
+          </template>
+          <template x-if="!ticket.loading && ticket.redeemed">
+            <div class="ticket-state ticket-state--used">
+              <div class="ticket-state-icon">✅</div>
+              <div class="ticket-state-text">交換済み</div>
+            </div>
+          </template>
+          <template x-if="!ticket.loading && !ticket.redeemed && !ticket.withinHours">
+            <div class="ticket-state ticket-state--outside">
+              <div class="ticket-slide-wrap ticket-slide-wrap--disabled">
+                <div class="ticket-slide-track">
+                  <span class="ticket-slide-hint">← スライドして栞をもらう →</span>
+                </div>
+              </div>
+              <div class="ticket-state-text ticket-state-text--sub">書店コーナー受付時間外です</div>
+            </div>
+          </template>
+          <template x-if="!ticket.loading && !ticket.redeemed && ticket.withinHours">
+            <div class="ticket-state ticket-state--active">
+              <p class="ticket-instruction">
+                書店コーナースタッフにこの画面をお見せください。<br>
+                <strong>スライド操作はスタッフの確認後にのみ行ってください。</strong><br>
+                スタッフ以外による操作はご遠慮ください。
+              </p>
+              <div class="ticket-slide-wrap">
+                <div class="ticket-slide-track">
+                  <span class="ticket-slide-hint" x-show="ticket.slideValue < 10">← スライドして栞をもらう →</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    x-model="ticket.slideValue"
+                    @change="onTicketSlide()"
+                    class="ticket-slider"
+                    aria-label="スライドして栞と交換"
+                  />
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
   </div>
 
   <!-- ========== ウィザード ========== -->
@@ -233,8 +283,10 @@
           </div>
 
           <p class="search-hint" x-show="bs.q4.loading">検索中...</p>
-          <p class="search-hint" x-show="bs.q4.error" style="color:var(--red)">
-            検索に失敗しました。手動で入力してください。
+          <p class="search-hint" x-show="bs.q4.error" style="color:var(--red)"
+            x-text="bs.q4.error === 'rate_limited'
+              ? 'リクエストが多すぎます。少し待ってから再度お試しください。'
+              : '検索に失敗しました。手動で入力してください。'">
           </p>
         </div>
 
@@ -292,8 +344,10 @@
           </div>
 
           <p class="search-hint" x-show="bs.q5.loading">検索中...</p>
-          <p class="search-hint" x-show="bs.q5.error" style="color:var(--red)">
-            検索に失敗しました。手動で入力してください。
+          <p class="search-hint" x-show="bs.q5.error" style="color:var(--red)"
+            x-text="bs.q5.error === 'rate_limited'
+              ? 'リクエストが多すぎます。少し待ってから再度お試しください。'
+              : '検索に失敗しました。手動で入力してください。'">
           </p>
         </div>
 
@@ -404,6 +458,68 @@
             📊 投票結果を見る
           </a>
         </div>
+
+        <!-- スライドチケット（FR-BT-050〜058） -->
+        <template x-if="ticket.voteId && ticket.exists">
+          <div class="ticket-wrap">
+            <div class="ticket-label">📚 書店コーナー 栞プレゼントチケット</div>
+            <div class="ticket">
+              <!-- ローディング -->
+              <template x-if="ticket.loading">
+                <div class="ticket-loading">確認中…</div>
+              </template>
+
+              <!-- 今このセッションで引換完了: 「栞プレゼント対象」 -->
+              <template x-if="!ticket.loading && ticket.redeemed && ticket.justRedeemed">
+                <div class="ticket-state ticket-state--success">
+                  <div class="ticket-state-icon">🎁</div>
+                  <div class="ticket-state-text">栞プレゼント対象</div>
+                  <div class="ticket-state-sub">店員にこの画面をお見せください</div>
+                </div>
+              </template>
+
+              <!-- 交換済み（別セッションまたは already_redeemed） -->
+              <template x-if="!ticket.loading && ticket.redeemed && !ticket.justRedeemed">
+                <div class="ticket-state ticket-state--used">
+                  <div class="ticket-state-icon">✅</div>
+                  <div class="ticket-state-text">交換済み</div>
+                </div>
+              </template>
+
+              <!-- 未交換 かつ 開店時間外 -->
+              <template x-if="!ticket.loading && !ticket.redeemed && !ticket.withinHours">
+                <div class="ticket-state ticket-state--outside">
+                  <div class="ticket-slide-wrap ticket-slide-wrap--disabled">
+                    <div class="ticket-slide-track">
+                      <span class="ticket-slide-hint">← スライドして栞をもらう →</span>
+                    </div>
+                  </div>
+                  <div class="ticket-state-text ticket-state-text--sub">書店コーナー受付時間外です</div>
+                </div>
+              </template>
+
+              <!-- 未交換 かつ 開店時間内 -->
+              <template x-if="!ticket.loading && !ticket.redeemed && ticket.withinHours">
+                <div class="ticket-state ticket-state--active">
+                  <div class="ticket-slide-wrap">
+                    <div class="ticket-slide-track">
+                      <span class="ticket-slide-hint" x-show="ticket.slideValue < 10">← スライドして栞をもらう →</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        x-model="ticket.slideValue"
+                        @change="onTicketSlide()"
+                        class="ticket-slider"
+                        aria-label="スライドして栞と交換"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 

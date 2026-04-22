@@ -139,6 +139,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Secrets & Credentials
+.clasp.json
 .clasprc.json
 *credentials*.json
 *secret*.json
