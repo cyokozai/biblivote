@@ -30,7 +30,6 @@ Detailed documentation is available in the `docs/` directory:
 
 -   **[System Specification (docs/SYSTEM.md)](./docs/SYSTEM.md)**: Technical overview, architecture, requirements, and SLO.
 -   **[Development Guide (docs/DEVELOPMENT.md)](./docs/DEVELOPMENT.md)**: In-depth setup, testing, and deployment instructions.
--   **[Architecture Decision Records (docs/adr/)](./docs/adr/)**: The "why" behind our technical choices.
 -   **[Security Audit](./docs/security/2026-04-04_security_audit.md)**: Latest security review findings.
 
 ---
