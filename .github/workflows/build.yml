@@ -8,6 +8,12 @@ on:
       tag:
         description: "Image tag (e.g. v1.0.0)"
         required: true
+  workflow_call:
+    inputs:
+      tag:
+        description: "Image tag"
+        required: true
+        type: string
 
 jobs:
   build-and-push:
